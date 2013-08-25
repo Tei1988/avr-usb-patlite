@@ -1,7 +1,6 @@
-#define F_CPU 8000000UL
-#define BAUD 38400
-
 #include <avr/io.h>
+#define F_CPU 8000000UL
+#define BAUD 19200
 #include <util/setbaud.h>
 
 //ATtiny2313 ‚Å‚Í PD0:RxD PD1:TxD
@@ -29,23 +28,25 @@ void ioinit(void)
 	UBRRH = UBRRH_VALUE;
 	UBRRL = UBRRL_VALUE;
 	#if USE_2X
-	UCSRA |= (1 << U2X);
+	sbi(UCSRA, U2X);
 	#else
-	UCSRA &= ~(1 << U2X);
+	cbi(UCSRA, U2X);
 	#endif
 	
 	// UARTŽóM
-	UCSRB = _BV(RXEN);
+	sbi(UCSRB, RXEN);
+	sbi(UCSRB, TXEN);
+	UCSRC = 0b00000110;
 }
 
-void uart_putchar(char c)
+void uart_putchar(unsigned char c)
 {
-	//loop_until_bit_is_set(UCSR0A, UDRE0);
+	loop_until_bit_is_set(UCSRA, UDRE);
 	UDR = c;
-	loop_until_bit_is_set(UCSRA, TXC);
+	//loop_until_bit_is_set(UCSRA, TXC);
 }
 
-char uart_getchar(void)
+unsigned char uart_getchar(void)
 {
 	loop_until_bit_is_set(UCSRA, RXC);
 	return UDR;
@@ -58,15 +59,18 @@ int main(void)
 	for(;;)
 	{
 		unsigned char c = uart_getchar();
+		uart_putchar(c);
 		switch(c) {
 			case 0xfe:
 				c = uart_getchar();
 				switch(c) {
 					case 0x01:
 						sbi(PORTB, OUT_RELAY);
+						uart_putchar(0x11);
 						break;
 					case 0x02:
 						cbi(PORTB, OUT_RELAY);
+						uart_putchar(0x11);
 						break;
 					default:
 						uart_putchar(0xee);
