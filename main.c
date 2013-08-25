@@ -9,6 +9,8 @@
 #define UART_TX   1
 #define OUT_RELAY 0
 
+#define sbi(PORT,BIT) PORT|=_BV(BIT)
+#define cbi(PORT,BIT) PORT&=~_BV(BIT)
 
 /**
  *
@@ -39,14 +41,14 @@ void ioinit(void)
 void uart_putchar(char c)
 {
 	//loop_until_bit_is_set(UCSR0A, UDRE0);
-	UDR0 = c;
-	loop_until_bit_is_set(UCSR0A, TXC0);
+	UDR = c;
+	loop_until_bit_is_set(UCSRA, TXC);
 }
 
 char uart_getchar(void)
 {
-	loop_until_bit_is_set(UCSR0A, RXC0);
-	return UDR0;
+	loop_until_bit_is_set(UCSRA, RXC);
+	return UDR;
 }
 	
 int main(void)
@@ -55,7 +57,7 @@ int main(void)
 	
 	for(;;)
 	{
-		char c = uart_getchar();
+		unsigned char c = uart_getchar();
 		switch(c) {
 			case 0xfe:
 				c = uart_getchar();
